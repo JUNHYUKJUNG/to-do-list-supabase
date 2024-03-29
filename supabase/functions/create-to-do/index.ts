@@ -9,6 +9,19 @@ Deno.serve(async (req) => {
   // 사용자가 보낸 Header로부터 Authorization을 꺼내옴.
   const authHeader = req.headers.get("Authorization")!; // 값이 null일 수도 있다는 타입에러를 해결하기 위해 값이 확실히 존재한다는 걸 적어주기 위해 뒤에 !를 붙힌다.
 
+  // Content 생성
+  const { content } = await req.json();
+  console.log(content);
+
+  // Content 응답
+  // from에는 DB table 이름 (to-do-list)이 들어감.
+  const result = await supabaseClient.from("to_do_list").insert({
+    content,
+    user_id: user?.id, // user의 타입이 null일 수도 있다는 타입 오류가 뜨기 때문에 ?로 처리함. user가 존재하면 id라는 뜻
+  });
+
+  console.log(result);
+
   // authHeader안의 내용을 확인
   // console.log(authHeader);
 
@@ -28,7 +41,7 @@ Deno.serve(async (req) => {
   const { data } = await supabaseClient.auth.getUser();
   const user = data.user;
 
-  console.log(user);
+  // console.log(user);
 
   // 테스트지만 return은 존재해야함. 응답에 headers를 넣고 headers 안에 응답하는 데이터 형태를 넣어준다.
   return new Response(JSON.stringify({ message: "test" }), {
