@@ -1,17 +1,16 @@
 import { Auth } from "@supabase/auth-ui-react";
 import { ThemeSupa } from "@supabase/auth-ui-shared";
-import { Session, createClient } from "@supabase/supabase-js";
+import { Session } from "@supabase/supabase-js";
 import { FC, useEffect, useState } from "react";
-
-// Client는 Prisma와 같은 역할을 함. Vite에서 환경변수는 process.env.VITE가 아닌 import.meta.env.VITE를 사용한다.
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_KEY
-);
+import CreateToDo from "./components/CreateToDo";
+import supabase from "./lib/supabaseClient";
+import { IToDo } from ".";
+import ToDoCard from "./components/ToDoCard";
 
 const App: FC = () => {
   // token 정보를 담고 있는 session을 useState로 생성
   const [session, setSession] = useState<Session | null>(null);
+  const [toDos, setToDos] = useState<IToDo[]>([]);
 
   // App component가 불러와질 때, 기본적으로 한 번 실행됨. Dependency가 만족되면 한 번 더 실행됨. 비워두면 App component 불러올 때만 실행됨.
   // getSession() 실행 후 then()으로 넘어옴.
@@ -19,6 +18,10 @@ const App: FC = () => {
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
+    });
+
+    supabase.functions.invoke("get-all-to-do").then(({ data }) => {
+      setToDos(data);
     });
 
     const {
@@ -38,7 +41,20 @@ const App: FC = () => {
   if (!session) {
     return <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} />;
   } else {
-    return <div className="bg-red-100">세션 있음</div>;
+    return (
+      <div>
+        <div>
+          Hello, {session.user.email}
+          <button onClick={() => supabase.auth.signOut()}>Sign Out</button>
+        </div>
+        <CreateToDo />
+        <ul>
+          {toDos?.map((v) => (
+            <ToDoCard key={v.id} todo={v} />
+          ))}
+        </ul>
+      </div>
+    );
   }
 };
 
